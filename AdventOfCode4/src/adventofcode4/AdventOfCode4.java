@@ -5,8 +5,12 @@
  */
 package adventofcode4;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  *
@@ -56,19 +60,60 @@ public class AdventOfCode4 {
 
     }
 
+    class letterCount {
+
+        String letter = "A";
+        int count = 0;
+
+        public letterCount(String letter, int count) {
+            this.letter = letter;
+            this.count = count;
+        }
+
+        private int getCount() {
+            return count;
+        }
+    }
+
     public int processCode(String code, int initialSum) {
+        code = code.toLowerCase(); // just in case
         String[] codeParts = code.split("-"); // Last chunk is 123[ABC]
-        int sectorID = 0;
-        String checksum = "";
+
+        letterCount[] letters = new letterCount[26];
+        for (int i = 0; i < letters.length; i++) {
+            letters[i] = new letterCount(Character.toString((char) ('a' + i)), 0);//Character.toString((char) ('a' + i));
+        }
+
         for (int i = 0; i < codeParts.length - 1; i++) {
             // Process room names
+            String roomName = codeParts[i];
+            for (int j = 0; j < roomName.length(); j++) {
+                char ch = roomName.charAt(j);
+                int value = (int) ch; // into ASCII
+                if (value >= 97 && value <= 122) {
+                    letters[ch - 'a'].count++;
+                }
+            }
+        }
+
+        Comparator<letterCount> comparator = Collections.reverseOrder(Comparator.comparing(letterCount -> letterCount.count));
+        comparator = comparator.thenComparing(Comparator.comparing(letterCount -> letterCount.letter));
+
+        Arrays.sort(letters, comparator);
+
+        String realChecksum = new String();
+        for (int i = 0; i < 5; i++) {
+            realChecksum += letters[i].letter;
         }
 
         String sectorIDChecksum = codeParts[codeParts.length - 1];
 
-        System.out.println(sectorIDChecksum);
         Pattern regex = Pattern.compile("(?<sectorID>\\d+)\\[(?<checksum>\\w+)");
         Matcher matcher = regex.matcher(sectorIDChecksum);
+
+        int sectorID = 0;
+        String checksum = "";
+
         if (matcher.find()) {
             sectorID = Integer.parseInt(matcher.group("sectorID"));
             checksum = matcher.group("checksum");
@@ -76,8 +121,14 @@ public class AdventOfCode4 {
             System.out.println("NO MATCH");
         }
 
-        System.out.println(regex);
-        return 0;
+        System.out.println("Calculated Checksum = " + realChecksum);
+        System.out.println("Given Checksum = " + checksum);
+
+        if (realChecksum.equals(checksum)) {
+            return sectorID + initialSum;
+        } else {
+            return initialSum;
+        }
     }
 
     public String getCodes() {
